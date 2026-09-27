@@ -1,29 +1,11 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from src.database import get_db_connection, initialize_db
+from fastapi import FastAPI
+from src.models import CheckoutPayload
+from src.services.payment_service import process_checkout_logic
 
-app = FastAPI(title="Pace PR Demo API")
+app = FastAPI(title="Pace Enterprise API")
 
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    email: str
-
-@app.on_event("startup")
-def startup_event() -> None:
-    initialize_db()
-
-@app.get("/")
-def read_root() -> dict[str, str]:
-    return {"message": "Welcome to the Clean API"}
-
-@app.get("/users/{user_id}", response_model=UserResponse)
-def get_user(user_id: int) -> dict:
-    with get_db_connection() as conn:
-        cursor = conn.execute("SELECT id, name, email FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-        
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    return dict(user)
+@app.post("/api/v1/checkout")
+async def checkout_endpoint(payload: CheckoutPayload):
+    # O endpoint fica limpo, delegando para o service
+    result = await process_checkout_logic(payload)
+    return result
